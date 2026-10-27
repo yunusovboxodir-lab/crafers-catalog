@@ -57,7 +57,7 @@ input[type=search] { flex:1 1 240px; }
 .cartfab.raised { bottom:calc(84px + env(safe-area-inset-bottom, 0px)); }
 .cartlist { margin:0; padding-left:20px; display:flex; flex-direction:column; gap:6px; }
 .cartlist li span { margin-right:6px; }
-#bb-who { width:100%; border-radius:8px; }
+#bb-who, #bb-editor, #bb-pin { width:100%; border-radius:8px; min-height:44px; padding:0 12px; border:1px solid var(--rule); background:var(--paper); color:var(--ink); font:inherit; }
 dialog.lightbox { width:100vw; height:100vh; max-width:100vw; max-height:100vh; border-radius:0; background:#111; display:flex; flex-direction:column; }
 dialog.lightbox:not([open]) { display:none; }
 .lb-bar { display:flex; gap:8px; justify-content:flex-end; align-items:center; padding:max(10px, env(safe-area-inset-top, 0px)) max(12px, env(safe-area-inset-right, 0px)) 10px max(12px, env(safe-area-inset-left, 0px)); }
@@ -136,7 +136,7 @@ let canWrite = false, artifactNs = null, filter = 'all', query = '', openSku = n
 let SHEET = {}, sheetState = D.sheet ? 'loading' : 'off';
 const statusOf = sku => (pending.statuses[sku] || SHEET[sku] || SAVED.statuses[sku] || { s: 'active' });
 const sheetPost = async body => { const r = await fetch(D.sheet, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(body) }); return r.json(); };
-let pinSaved = ''; try { pinSaved = localStorage.getItem('bb-pin') || ''; } catch (e) {}
+let pinSaved = '', editorName = ''; try { pinSaved = localStorage.getItem('bb-pin') || ''; editorName = localStorage.getItem('bb-editor') || ''; } catch (e) {}
 const uploadsOf = sku => [...(SAVED.photos[sku] || []).filter((_, i) => !(pending.photosDel[sku] || []).includes(i)), ...(pending.photosAdd[sku] || [])];
 const photosOf = p => [...p.ph.map(([id, label, conf]) => ({ src: thumb(id), big: bigOf(id), label, conf })),
   ...uploadsOf(p.sku).map(u => ({ src: u.t || u.src, big: u.id ? '/_blob/' + u.id : (u.t || u.src), label: 'Загружено' + (u.at ? ' ' + u.at : ''), conf: '', up: true }))];
@@ -224,6 +224,7 @@ function openSheet(sku) {
    <div class="row"><button class="secondary" data-cart="${esc(sku)}">${cart.includes(sku) ? '✓ В заявке на фото' : '+ Добавить в заявку на фото'}</button></div>
    ${D.sheet && !canWrite ? `<fieldset id="bb-sheetedit"><legend>Изменить статус</legend><div class="radios">${Object.entries(STATUS).map(([k, t]) => `<label><input type="radio" name="bb-st" id="bb-st-${k}" value="${k}"${st.s === k ? ' checked' : ''}>${t}</label>`).join('')}</div>
      <label for="bb-note" class="muted">Комментарий: новое название, дата снятия, на что заменён</label><textarea id="bb-note">${esc(st.note || '')}</textarea>
+     <label for="bb-editor" class="muted">Ваше имя: оно запишется в таблицу рядом со статусом</label><input id="bb-editor" type="search" autocomplete="name" value="${esc(editorName)}" placeholder="Например: Азиз, маркетинг">
      <label for="bb-pin" class="muted">PIN-код редактора${pinSaved ? ' (сохранён на этом устройстве)' : ''}</label><input id="bb-pin" type="password" inputmode="numeric" autocomplete="off" value="" placeholder="${pinSaved ? '••••' : 'PIN'}">
      <div class="row"><button class="primary" id="bb-sheet-save">Сохранить статус</button></div>${st.who ? `<p class="muted">Последнее изменение: ${esc(st.who)}, ${esc(st.at || '')}</p>` : ''}</fieldset>` : ''}
    ${canWrite ? `<fieldset><legend>Статус товара</legend><div class="radios">${Object.entries(STATUS).map(([k, t]) => `<label><input type="radio" name="bb-st" id="bb-st-${k}" value="${k}"${st.s === k ? ' checked' : ''}>${t}</label>`).join('')}</div>
@@ -387,10 +388,13 @@ document.addEventListener('click', async ev => {
     const sku = openSku, p = D.products.find(x => x.sku === sku);
     const s = document.querySelector('input[name="bb-st"]:checked')?.value || 'active', note = document.getElementById('bb-note').value.trim();
     const pin = document.getElementById('bb-pin').value.trim() || pinSaved;
+    const who = document.getElementById('bb-editor').value.trim();
+    if (!who) { toast('Напишите ваше имя: оно запишется рядом со статусом.'); document.getElementById('bb-editor').focus(); return; }
     if (!pin) { toast('Введите PIN-код редактора.'); return; }
+    editorName = who; try { localStorage.setItem('bb-editor', who); } catch (e) {}
     t.disabled = true; t.textContent = 'Сохраняю…';
     try {
-      const r = await sheetPost({ action: 'status', pin, sku, name: p.name, s, note });
+      const r = await sheetPost({ action: 'status', pin, who, sku, name: p.name, s, note });
       if (!r.ok) { toast(r.error === 'bad_pin' ? 'PIN-код не подошёл. Проверьте лист «Доступ» в таблице.' : 'Не удалось сохранить.'); if (r.error === 'bad_pin') { pinSaved = ''; try { localStorage.removeItem('bb-pin'); } catch (e) {} } t.disabled = false; t.textContent = 'Сохранить статус'; return; }
       pinSaved = pin; try { localStorage.setItem('bb-pin', pin); } catch (e) {}
       SHEET[sku] = { s, note, at: today(), who: r.name }; render(); openSheet(sku); toast('Статус сохранён. Его видят все, кто откроет сайт.');
