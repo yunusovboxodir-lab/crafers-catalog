@@ -42,7 +42,8 @@ body::before { content:""; position:fixed; inset:0 0 auto; height:env(safe-area-
 .chipbtn[aria-pressed="true"] { background:var(--cocoa); border-color:var(--cocoa); color:var(--cocoa-ink); }
 .chipbtn:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, .card:focus-visible { outline:2px solid var(--cocoa); outline-offset:2px; }
 input[type=search], select { min-height:40px; padding:0 14px; border:1px solid var(--rule); border-radius:20px; background:var(--paper); color:var(--ink); font:inherit; }
-input[type=search] { flex:1 1 240px; }
+.row input[type=search] { flex:1 1 240px; }
+.sheet input { flex:none; }
 .brand { display:flex; flex-direction:column; gap:14px; scroll-margin-top:120px; }
 .brand-head { display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 14px; border-bottom:2px solid var(--ink); padding-bottom:8px; }
 .grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(176px, 1fr)); gap:14px; }
