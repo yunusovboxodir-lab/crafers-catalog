@@ -7,18 +7,18 @@
   --ground:#f6f2ee; --paper:#fffdfb; --ink:#2a1f1a; --muted:#6f625a; --rule:#e6ddd5; --cocoa:#6b3f2a;
   --cocoa-ink:#fffdfb; --shade:rgba(42,31,26,.08);
   --s-active:#2f6b45; --s-active-bg:#e4f1e8; --s-new:#1f5fa8; --s-new-bg:#e2ecf8;
-  --s-rebrand:#6c3fa0; --s-rebrand-bg:#efe6f8; --s-off:#8a2f26; --s-off-bg:#f8e4e1; --s-export:#0f5f6b; --s-export-bg:#dff0f2;
+  --s-rebrand:#6c3fa0; --s-rebrand-bg:#efe6f8; --s-off:#8a2f26; --s-off-bg:#f8e4e1; --s-export:#0f5f6b; --s-export-bg:#dff0f2; --s-paused:#8f4a0c; --s-paused-bg:#fce9d6;
   --warn:#8a5a00; --warn-bg:#fbefd2;
   --f-display:"Unbounded", "Golos Text", system-ui, sans-serif;
   --f-body:"Golos Text", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme:dark;
   --ground:#17120f; --paper:#211a16; --ink:#f2ebe5; --muted:#ae9f95; --rule:#3a2f28; --cocoa:#d9a27f; --cocoa-ink:#1b1410; --shade:rgba(0,0,0,.35);
-  --s-active:#8fd3a5; --s-active-bg:#1d3326; --s-new:#8fbdf2; --s-new-bg:#18293d; --s-rebrand:#c7a4f0; --s-rebrand-bg:#2c2040; --s-export:#86d0da; --s-export-bg:#15303a;
+  --s-active:#8fd3a5; --s-active-bg:#1d3326; --s-new:#8fbdf2; --s-new-bg:#18293d; --s-rebrand:#c7a4f0; --s-rebrand-bg:#2c2040; --s-export:#86d0da; --s-export-bg:#15303a; --s-paused:#f2b37c; --s-paused-bg:#3a2513;
   --s-off:#f0a197; --s-off-bg:#3d1f1b; --warn:#f0c46a; --warn-bg:#3a2f14; } }
 :root[data-theme="dark"] { color-scheme:dark;
   --ground:#17120f; --paper:#211a16; --ink:#f2ebe5; --muted:#ae9f95; --rule:#3a2f28; --cocoa:#d9a27f; --cocoa-ink:#1b1410; --shade:rgba(0,0,0,.35);
-  --s-active:#8fd3a5; --s-active-bg:#1d3326; --s-new:#8fbdf2; --s-new-bg:#18293d; --s-rebrand:#c7a4f0; --s-rebrand-bg:#2c2040; --s-export:#86d0da; --s-export-bg:#15303a;
+  --s-active:#8fd3a5; --s-active-bg:#1d3326; --s-new:#8fbdf2; --s-new-bg:#18293d; --s-rebrand:#c7a4f0; --s-rebrand-bg:#2c2040; --s-export:#86d0da; --s-export-bg:#15303a; --s-paused:#f2b37c; --s-paused-bg:#3a2513;
   --s-off:#f0a197; --s-off-bg:#3d1f1b; --warn:#f0c46a; --warn-bg:#3a2f14; }
 * { box-sizing:border-box; }
 body { background:var(--ground); color:var(--ink); font:15px/1.5 var(--f-body);
@@ -82,6 +82,7 @@ dialog.lightbox:not([open]) { display:none; }
 .tag.rebrand { background:var(--s-rebrand-bg); color:var(--s-rebrand); } .tag.rebrand::before { content:"↻"; }
 .tag.off { background:var(--s-off-bg); color:var(--s-off); } .tag.off::before { content:"✕"; }
 .tag.export { background:var(--s-export-bg); color:var(--s-export); } .tag.export::before { content:"↗"; }
+.tag.paused { background:var(--s-paused-bg); color:var(--s-paused); } .tag.paused::before { content:"‖"; }
 .tag.rec { background:transparent; color:var(--muted); font-weight:500; padding-inline:0; white-space:normal; }
 .tag.edited { background:var(--warn-bg); color:var(--warn); }
 .card.is-off .pic img { filter:grayscale(1); opacity:.6; }
@@ -127,7 +128,7 @@ footer { color:var(--muted); font-size:13px; border-top:1px solid var(--rule); p
 const SHELL = '<div id="app"><header class="cover"><span class="eyebrow">Каталог Crafers · макеты упаковок</span><h1>Товары Crafers: макеты и статусы</h1><p class="muted">Загрузка каталога…</p></header></div>';
 const D = JSON.parse(document.getElementById('bb-data').textContent);
 const SAVED = JSON.parse(document.getElementById('bb-state').textContent);
-const STATUS = { active: 'Производится', new: 'Новинка', rebrand: 'Ребрендинг', off: 'Снят с производства', export: 'Экспорт' };
+const STATUS = { active: 'Производится', new: 'Новинка', rebrand: 'Ребрендинг', paused: 'Временно не производится', off: 'Снят с производства', export: 'Экспорт' };
 const HIDDEN = s => s === 'off' || s === 'export';
 const REC = { ok: 'Узнаётся в проде', warn: 'Узнаётся редко', bad: 'Не узнаётся в проде' };
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -211,11 +212,11 @@ function render() {
   document.getElementById('app').innerHTML = `
   <header class="cover"><span class="eyebrow">Каталог Crafers · макеты упаковок · ${esc(D.asof)}</span>
    <h1>Товары Crafers: макеты и статусы</h1>
-   <p>Все товары, которые стоят на полке, с макетами упаковок дизайнеров. У каждого товара отмечено, производится ли он сейчас, новинка ли это, прошёл ли он ребрендинг, снят с производства или идёт только на экспорт${SHOWREC ? ', и узнаёт ли его ShelfAI на снимках торговых представителей' : ''}. Нажмите на товар, чтобы увидеть фото крупно; отметьте нужные товары кнопкой «В заявку на фото», чтобы запросить исходники.</p>
-   <div class="summary"><div><b>${counts.current}</b><span>актуальных товаров</span></div><div><b>${counts.current - counts.nopic}</b><span>актуальных с фото-образцом</span></div><div><b>${counts.nopic}</b><span>актуальных без фото</span></div><div><b>${counts.new}</b><span>новинок</span></div><div><b>${counts.off}</b><span>снято с производства</span></div><div><b>${counts.export}</b><span>на экспорт</span></div></div>
+   <p>Все товары, которые стоят на полке, с макетами упаковок дизайнеров. У каждого товара отмечено, производится ли он сейчас, новинка ли это, прошёл ли он ребрендинг, временно не производится, снят с производства или идёт только на экспорт${SHOWREC ? ', и узнаёт ли его ShelfAI на снимках торговых представителей' : ''}. Нажмите на товар, чтобы увидеть фото крупно; отметьте нужные товары кнопкой «В заявку на фото», чтобы запросить исходники.</p>
+   <div class="summary"><div><b>${counts.current}</b><span>актуальных товаров</span></div><div><b>${counts.current - counts.nopic}</b><span>актуальных с фото-образцом</span></div><div><b>${counts.nopic}</b><span>актуальных без фото</span></div><div><b>${counts.new}</b><span>новинок</span></div><div><b>${counts.paused}</b><span>временно не производятся</span></div><div><b>${counts.off}</b><span>снято с производства</span></div><div><b>${counts.export}</b><span>на экспорт</span></div></div>
    ${canWrite ? '<p class="notice">Вы можете менять статусы и добавлять фото: откройте карточку товара. Правки копятся внизу экрана и сохраняются для всех кнопкой «Сохранить».</p>' : ''}
   </header>
-  <div class="bar"><div class="row">${f('current', 'Актуальные')}${f('all', 'Все товары')}${f('active', 'Производится')}${f('new', 'Новинки')}${f('rebrand', 'Ребрендинг')}${f('off', 'Сняты')}${f('export', 'Экспорт')}${f('nopic', 'Без фото')}${SHOWREC ? f('bad', 'Не узнаются') : ''}</div>
+  <div class="bar"><div class="row">${f('current', 'Актуальные')}${f('all', 'Все товары')}${f('active', 'Производится')}${f('new', 'Новинки')}${f('rebrand', 'Ребрендинг')}${f('paused', 'Временно не производятся')}${f('off', 'Сняты')}${f('export', 'Экспорт')}${f('nopic', 'Без фото')}${SHOWREC ? f('bad', 'Не узнаются') : ''}</div>
    <div class="row"><input id="bb-q" type="search" placeholder="Поиск по названию, коду или бренду" value="${esc(query)}" aria-label="Поиск">
    <select id="bb-jump" aria-label="Перейти к бренду"><option value="">Перейти к бренду…</option>${brands.map((b, i) => `<option value="b-${i}">${esc(b)}</option>`).join('')}</select></div></div>
   ${sections || '<p class="notice">Под этот фильтр товаров нет.</p>'}
